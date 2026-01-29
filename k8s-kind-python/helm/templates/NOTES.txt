@@ -1,0 +1,87 @@
+===============================================================================
+  Python FastAPI + PostgreSQL Application Deployed!
+===============================================================================
+
+Thank you for installing {{ .Chart.Name }}.
+
+Your release is named {{ .Release.Name }}.
+
+To learn more about the release, try:
+
+  $ helm status {{ .Release.Name }}
+  $ helm get all {{ .Release.Name }}
+
+-------------------------------------------------------------------------------
+  PYTHON APPLICATION
+-------------------------------------------------------------------------------
+{{- if .Values.ingress.enabled }}
+Application URL:
+{{- range $host := .Values.ingress.hosts }}
+  {{- range .paths }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ $host.host }}{{ .path }}
+  {{- end }}
+{{- end }}
+{{- else if contains "NodePort" .Values.service.type }}
+Get the application URL by running these commands:
+  export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "helm.fullname" . }}-python)
+  export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo http://$NODE_IP:$NODE_PORT
+{{- else if contains "LoadBalancer" .Values.service.type }}
+Get the application URL by running these commands:
+  NOTE: It may take a few minutes for the LoadBalancer IP to be available.
+        You can watch the status of by running 'kubectl get --namespace {{ .Release.Namespace }} svc -w {{ include "helm.fullname" . }}-python'
+  export SERVICE_IP=$(kubectl get svc --namespace {{ .Release.Namespace }} {{ include "helm.fullname" . }}-python --template "{{"{{ range (index .status.loadBalancer.ingress 0) }}{{.}}{{ end }}"}}")
+  echo http://$SERVICE_IP:{{ .Values.service.port }}
+{{- else if contains "ClusterIP" .Values.service.type }}
+Get the application URL by running these commands:
+  export POD_NAME=$(kubectl get pods --namespace {{ .Release.Namespace }} -l "app.kubernetes.io/name={{ include "helm.name" . }},app.kubernetes.io/instance={{ .Release.Name }},app.kubernetes.io/component=backend" -o jsonpath="{.items[0].metadata.name}")
+  export CONTAINER_PORT=$(kubectl get pod --namespace {{ .Release.Namespace }} $POD_NAME -o jsonpath="{.spec.containers[0].ports[0].containerPort}")
+  echo "Visit http://127.0.0.1:8080 to use your application"
+  kubectl --namespace {{ .Release.Namespace }} port-forward $POD_NAME 8080:$CONTAINER_PORT
+{{- end }}
+
+API Endpoints:
+  - Health Check: GET /health
+  - Write to DB:  POST /write
+
+-------------------------------------------------------------------------------
+  POSTGRESQL DATABASE
+-------------------------------------------------------------------------------
+{{- if .Values.postgresql.enabled }}
+PostgreSQL has been deployed as part of this release.
+
+Connection Details:
+  Host:     {{ include "helm.fullname" . }}-postgresql
+  Port:     {{ .Values.postgresql.service.port }}
+  Database: {{ .Values.postgresql.auth.database }}
+  Username: {{ .Values.postgresql.auth.username }}
+
+To connect to the database from within the cluster:
+  kubectl run {{ .Release.Name }}-postgresql-client --rm --tty -i --restart='Never' \
+    --namespace {{ .Release.Namespace }} \
+    --image postgres:15-alpine \
+    --env="PGPASSWORD=$(kubectl get secret --namespace {{ .Release.Namespace }} {{ include "helm.fullname" . }}-postgresql-secret -o jsonpath='{.data.POSTGRES_PASSWORD}' | base64 --decode)" \
+    --command -- psql -h {{ include "helm.fullname" . }}-postgresql -U {{ .Values.postgresql.auth.username }} -d {{ .Values.postgresql.auth.database }}
+
+To port-forward the PostgreSQL service:
+  kubectl port-forward --namespace {{ .Release.Namespace }} svc/{{ include "helm.fullname" . }}-postgresql 5432:{{ .Values.postgresql.service.port }}
+{{- else }}
+Using external PostgreSQL database:
+  Host: {{ .Values.externalPostgresql.host }}
+  Port: {{ .Values.externalPostgresql.port }}
+{{- end }}
+
+-------------------------------------------------------------------------------
+  WARNINGS
+-------------------------------------------------------------------------------
+{{- if and .Values.postgresql.enabled (eq .Values.postgresql.auth.password "changeme") }}
+⚠️  WARNING: You are using the default PostgreSQL password!
+   Please change it by setting postgresql.auth.password in your values.
+{{- end }}
+
+{{- if not .Values.postgresql.persistence.enabled }}
+⚠️  WARNING: PostgreSQL persistence is disabled!
+   Data will be lost when the pod restarts.
+{{- end }}
+
+===============================================================================

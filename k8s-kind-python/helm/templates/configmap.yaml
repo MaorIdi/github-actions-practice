@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "helm.fullname" . }}-config
+  labels:
+    {{- include "helm.labels" . | nindent 4 }}
+data:
+  # Application configuration
+  APP_NAME: "python-fastapi-app"
+  APP_ENV: "production"
+  # PostgreSQL connection info (non-sensitive)
+  {{- if .Values.postgresql.enabled }}
+  POSTGRES_HOST: "{{ include "helm.fullname" . }}-postgresql"
+  POSTGRES_PORT: "{{ .Values.postgresql.service.port }}"
+  {{- else }}
+  POSTGRES_HOST: "{{ .Values.externalPostgresql.host }}"
+  POSTGRES_PORT: "{{ .Values.externalPostgresql.port }}"
+  {{- end }}

@@ -1,0 +1,96 @@
+# values-prod.yaml
+# Production environment values for python-postgres-app
+
+replicaCount: 3
+
+image:
+  repository: myregistry.com/python-fastapi-app
+  tag: "v1.0.0"
+  pullPolicy: IfNotPresent
+
+python:
+  containerPort: 8000
+  extraEnv:
+    - name: LOG_LEVEL
+      value: "info"
+  livenessProbe:
+    path: /health
+    initialDelaySeconds: 30
+    periodSeconds: 30
+  readinessProbe:
+    path: /health
+    initialDelaySeconds: 10
+    periodSeconds: 10
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+  hosts:
+    - host: api.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: api-tls
+      hosts:
+        - api.example.com
+
+# PostgreSQL for production
+postgresql:
+  enabled: true
+  image:
+    repository: postgres
+    tag: "15-alpine"
+  auth:
+    database: proddb
+    username: produser
+    password: ""  # Use existingSecret in real production
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClass: "standard"
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+  podSecurityContext:
+    fsGroup: 1001
+  securityContext:
+    runAsUser: 1001
+    runAsNonRoot: true
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+podSecurityContext:
+  fsGroup: 1000
+
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true

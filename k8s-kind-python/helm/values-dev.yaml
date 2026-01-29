@@ -1,0 +1,52 @@
+# values-dev.yaml
+# Development environment values for python-postgres-app
+
+replicaCount: 1
+
+image:
+  repository: python-fastapi-app
+  tag: "dev"
+  pullPolicy: Always
+
+python:
+  containerPort: 8000
+  extraEnv:
+    - name: DEBUG
+      value: "true"
+    - name: LOG_LEVEL
+      value: "debug"
+
+service:
+  type: ClusterIP
+  port: 80
+
+# PostgreSQL for development
+postgresql:
+  enabled: true
+  image:
+    repository: postgres
+    tag: "15-alpine"
+  auth:
+    database: devdb
+    username: devuser
+    password: devpassword
+  persistence:
+    enabled: false  # Use emptyDir for dev
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi
+
+autoscaling:
+  enabled: false
