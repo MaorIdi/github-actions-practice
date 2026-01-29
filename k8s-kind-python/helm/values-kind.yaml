@@ -1,0 +1,72 @@
+# values-kind.yaml
+# Values for running in kind cluster (CI/local testing)
+
+replicaCount: 1
+
+image:
+  repository: python-fastapi-app
+  tag: "latest"
+  # IMPORTANT: Use Never for kind - image is loaded directly
+  pullPolicy: Never
+
+python:
+  containerPort: 8000
+  extraEnv: []
+  livenessProbe:
+    path: /health
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readinessProbe:
+    path: /health
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+service:
+  type: ClusterIP
+  port: 80
+
+# PostgreSQL for kind cluster
+postgresql:
+  enabled: true
+  image:
+    repository: postgres
+    tag: "15-alpine"
+    pullPolicy: IfNotPresent
+  auth:
+    database: postgres
+    username: postgres
+    password: kindpassword
+  service:
+    type: ClusterIP
+    port: 5432
+  # Disable persistence for kind (uses emptyDir)
+  persistence:
+    enabled: false
+  # Simplified security context for kind
+  podSecurityContext:
+    fsGroup: 999
+  securityContext:
+    runAsUser: 999
+    runAsNonRoot: false
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+autoscaling:
+  enabled: false
