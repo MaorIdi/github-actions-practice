@@ -74,6 +74,22 @@ jobs:
           kubectl port-forward svc/my-app-python-postgres-app-python 8080:80 &
           sleep 5
           curl -s http://localhost:8080/health || echo "Health check completed"
+
+      - name: Run API test job
+        run: |
+          echo "Applying test job manifest..."
+          kubectl apply -f ./k8s-kind-python/test-job.yaml
+          
+          echo "Waiting for test job to complete..."
+          kubectl wait --for=condition=complete job/test-api-write --timeout=120s
+          
+          echo "========================================="
+          echo "        TEST JOB RESULTS"
+          echo "========================================="
+          kubectl logs job/test-api-write
+          
+          echo ""
+          echo "✅ Test job completed successfully!"
           
       - name: Show logs on failure
         if: failure()
@@ -87,6 +103,11 @@ jobs:
           echo "        POSTGRESQL LOGS"
           echo "========================================="
           kubectl logs -l app.kubernetes.io/component=database --tail=100 || true
+          echo ""
+          echo "========================================="
+          echo "        TEST JOB LOGS"
+          echo "========================================="
+          kubectl logs job/test-api-write || true
           echo ""
           echo "========================================="
           echo "        ALL EVENTS"

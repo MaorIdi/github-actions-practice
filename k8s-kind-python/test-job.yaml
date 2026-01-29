@@ -1,0 +1,46 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: test-api-write
+  labels:
+    app: test-job
+spec:
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      labels:
+        app: test-job
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: curl
+          image: curlimages/curl:latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Testing Python API write endpoint..."
+              echo "Sending POST request to http://my-app-python-postgres-app-python/write"
+              
+              # Send JSON POST request to the Python service using K8s internal DNS
+              response=$(curl -s -w "\n%{http_code}" -X POST \
+                http://my-app-python-postgres-app-python/write \
+                -H "Content-Type: application/json" \
+                -d '{"message": "Hello from Kubernetes Job! Test at '"$(date -Iseconds)"'"}')
+              
+              # Extract HTTP status code (last line) and body (everything else)
+              http_code=$(echo "$response" | tail -n1)
+              body=$(echo "$response" | sed '$d')
+              
+              echo "Response body: $body"
+              echo "HTTP status code: $http_code"
+              
+              # Check if request was successful (2xx status code)
+              if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
+                echo "✅ SUCCESS: Data written to database!"
+                exit 0
+              else
+                echo "❌ FAILED: Could not write to database"
+                exit 1
+              fi
