@@ -178,7 +178,7 @@ postgresql:
     enabled: true
     size: 1Gi
     accessMode: ReadWriteOnce
-    storageClass: "standard"  # Use 'standard' for Kind clusters, or leave empty for cloud providers
+    # storageClass: ""  # Leave commented to use cluster default (kops-csi-1-21 on AWS)
     # existingClaim: ""  # Use existing PVC
   
   # Pod security context for PostgreSQL
