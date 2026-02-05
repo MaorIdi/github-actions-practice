@@ -178,7 +178,7 @@ postgresql:
     enabled: true
     size: 1Gi
     accessMode: ReadWriteOnce
-    # storageClass: ""  # Leave commented to use cluster default (kops-csi-1-21 on AWS)
+    storageClass: "kops-csi-1-21"  # AWS EBS CSI storage class
     # existingClaim: ""  # Use existing PVC
   
   # Pod security context for PostgreSQL
