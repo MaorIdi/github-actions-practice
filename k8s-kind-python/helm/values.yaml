@@ -156,7 +156,7 @@ postgresql:
   # PostgreSQL image configuration
   image:
     repository: postgres
-    tag: "15-alpine"
+    tag: "16-alpine"
     pullPolicy: IfNotPresent
   
   # PostgreSQL authentication settings
